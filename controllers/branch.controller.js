@@ -1,5 +1,4 @@
 
-const { Connection } = require('pg')
 const connection = require('../DBConfig/connection')
 const logger = require('../LogConfig/logger')
 let branch = require('../models/branch.model')
@@ -17,15 +16,20 @@ exports.Create = async (req, res) => {
     const date = year + '-' + month + '-' + _date
 
     SQL = `SELECT * FROM public.tbl_branch_code WHERE branch_id =$1`
+await connection.connect((err, client, done) => {
+    client.query(SQL, [branch.branch_id], (error, results) => {
 
-    await connection.query(SQL, [branch.branch_id], (error, results) => {
+
+        
 
         if (error) logger.error(error)
         if (results.rowCount > 0) {
             res.status(403).send({ message: 'ສາຂານີ້ມີ້ຢູ່ໃນລະບົບແລ້ວ' })
         }
+        
         else {
-            
+            done();
+
             SQL = `INSERT INTO public.tbl_branch_code (branch_id, create_by, create_date, phone, branch_name)
                                     VALUES ($1, $2, $3, $4, $5)`
                 process.POST(
@@ -38,6 +42,8 @@ exports.Create = async (req, res) => {
 
         }
     })
+})
+     
 }
 //............PUT.................//
 exports.Update = async (req, res) => {
@@ -48,8 +54,9 @@ exports.Update = async (req, res) => {
     logger.info(req.body)
 
     SQL = `UPDATE tbl_branch_code SET phone = $1, branch_name = $2 WHERE branch_id = $3`
+await connection.connect((err, cleint, done) => {
 
-    await connection.query(SQL, [branch.phone, branch.branch_name, branch.branch_id], (error, results) => {
+    cleint.query(SQL, [branch.phone, branch.branch_name, branch.branch_id], (error, results) => {
         if(error) {
             logger.error(error)
             res.status(403).send({error: error})
@@ -58,6 +65,9 @@ exports.Update = async (req, res) => {
             res.send({message: "Updated"})
         }
     })
+
+    done();
+})  
 }
 
 //............DELETE.................//
@@ -65,8 +75,8 @@ exports.Update = async (req, res) => {
 exports.Delete = async (req, res) => {
     branch = req.params
 
-    SQL = `DELETE FROM public.tbl_branch_code WHERE branch_id = $1`
-
+    SQL = `DELETE FROM tbl_branch_code WHERE branch_id = $1`
+    
     process.DELETE(
         res,
         'DELETE/api/branch/'+branch.branch_id,
@@ -81,13 +91,32 @@ exports.Get = async (req, res) => {
 
     SQL = `SELECT * FROM public.tbl_branch_code `
 
-    process.GET(
-        res,
-        'GET/api/branch',
-        '',
-        SQL,
-        '',
-    )
+    connection.connect((err, cleint, done)=> {
+        
+        cleint.query(SQL, (err, results) => {
+            if (err) {
+                logger.error(err);
+               return res.status(403).send({ err: err })
+            }
+            if (results.rowCount == 0) {
+               return res.status(404).send({ message: "Not found data Or data in database empty" })
+            }
+            else {
+                logger.info(results)
+               return res.status(200).send(results.rows)
+            }
+            
+        });
+            done();
+       })
+       
+    // process.GET(
+    //     res,
+    //     'GET/api/branch',
+    //     '',
+    //     SQL,
+    //     '',
+    // )
 }
 
 

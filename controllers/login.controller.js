@@ -10,27 +10,33 @@ exports.login = async (req, res) => {
 
     user = req.params
 
-    logger.info('POST/api/login/' + user.user_email +'/'+ user.user_password)
+    logger.info('POST/api/login/' + user.user_email + '/' + user.user_password)
 
     SQL = `SELECT * FROM public.tbl_user WHERE user_email = $1 AND user_password = $2`
 
-    await connection.query(SQL, [user.user_email, user.user_password], (error, results) => {
+    await connection.connect((err, client, done) => {
 
-        if (error) {
-            logger.error(error)
-            res.status(403).send({ error: error })
-        }
-        if (results.rowCount == 0) {
-            res.status(404).send({ message: 'false' })
-        }
-        else {
-            logger.info(results)
-            jwt.sign({ user }, 'secretkey', (err, token) => {
-                res.json({
-                    accessToken: token,
-                    data: results.rows
+        client.query(SQL, [user.user_email, user.user_password], (error, results) => {
+
+            if (error) {
+                logger.error(error)
+                res.status(403).send({ error: error })
+            }
+            if (results.rowCount == 0) {
+                res.status(404).send({ message: 'Email Or Password incorrect' })
+            }
+            else {
+                logger.info(results)
+                jwt.sign({ user }, 'secretkey', (err, token) => {
+                    res.json({
+                        accessToken: token,
+                        data: results.rows
+                    })
                 })
-            })
-        }
+            }
+        })
+
+        done();
     })
+
 }

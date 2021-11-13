@@ -51,7 +51,7 @@ const option = {
   swagger: "3.0",
     servers: [
       {
-        url: `http://localhost:${PORT}`
+        url: `http://49.0.198.122:7001`
       }
     ],
   },
@@ -62,6 +62,7 @@ const option = {
 
 const swaggerDocs = swaggerJSDoc(option)
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocs))
+
 
 
 
